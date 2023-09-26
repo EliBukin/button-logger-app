@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Press Logger</title>
+    <style>
+        /* Add CSS styles for the button */
+        button.confirm-button {
+            padding: 60px 160px; /* Adjust padding to make the button bigger */
+            font-size: 72px; /* Increase font size for better readability */
+            background-color: orange; /* Set the button background color to orange */
+            color: white; /* Set text color to white */
+            border: none; /* Remove button border */
+            border-radius: 10px; /* Add rounded corners */
+            margin-right: 20px; /* Add some space to the right of the button */
+        }
+        
+        /* Add CSS styles for the delete button */
+        button.delete-button {
+            padding: 60px 160px; /* Adjust padding to make the button bigger */
+            font-size: 72px; /* Increase font size for better readability */
+            background-color: red; /* Set the button background color to red */
+            color: white; /* Set text color to white */
+            border: none; /* Remove button border */
+            border-radius: 10px; /* Add rounded corners */
+        }
+        
+        /* Add CSS styles for the time lines */
+        ul {
+            list-style-type: none; /* Remove bullet points */
+            padding: 0;
+            font-size: 80px; /* Increase font size for time lines */
+        }
+        
+        ul li {
+            margin-bottom: 30px; /* Add some spacing between time lines */
+        }
+        
+        /* Add CSS styles for the h1 */
+        h1 {
+            font-size: 96px; /* Increase font size for the h1 element */
+        }
+    </style>
+</head>
+<body>
+    <h1>Meds Consumption Logger</h1>
+    <form method="POST" action="{{ url_for('index') }}">
+        <button class="confirm-button" type="submit" name="confirm_meds">Confirm taking meds</button>
+        <button class="delete-button" type="submit" name="delete_last">Delete Last Entry</button>
+    </form>
+    <h2>Took Meds On:</h2>
+    <ul>
+        {% for press_time in button_press_times %}
+            <li>{{ press_time }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
