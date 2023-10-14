@@ -24,6 +24,6 @@ ls /usr/share/zoneinfo && \
 cp /usr/share/zoneinfo/Israel /etc/localtime && \
 echo "Asia/Jerusalem" >  /etc/timezone 
 
-RUN ["chmod", "+x", "/app/button-logger-app.py"]
+RUN ["chmod", "+x", "/app/app.py"]
 
-ENTRYPOINT [ "python3", "/app/button-logger-app.py" ]
+ENTRYPOINT [ "python3", "/app/app.py" ]
