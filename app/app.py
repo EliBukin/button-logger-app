@@ -1,11 +1,14 @@
 from flask import Flask, render_template, request, redirect
 import time
 import os
+from reminder_service import start_reminder_service
 
 app = Flask(__name__)
 
 log_file_path = '/app/log/app-log.txt'
 deleted_log_file_path = '/app/log/deleted-entries-log.txt'
+
+scheduler = start_reminder_service()
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -34,6 +37,8 @@ def log_action():
     log_data = read_log()
     log_data.insert(0, current_time)
     write_log(log_data)
+    # Reset the reminder timer when the button is pressed
+    scheduler.reschedule_job('send_reminder_email', trigger='interval', minutes=5)
 
 def read_log():
     if os.path.exists(log_file_path):
@@ -67,4 +72,4 @@ def log_deleted_entry(entry):
         print(f"Error: Could not write to {deleted_log_file_path}")
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)

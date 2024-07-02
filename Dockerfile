@@ -9,6 +9,8 @@ RUN echo "button logger app" \
 && apk add py3-pip \
 && pip install flask
 
+RUN pip install flask apscheduler
+
 ENV LC_ALL=C.UTF-8
 
 ENV LANG=C.UTF-8
