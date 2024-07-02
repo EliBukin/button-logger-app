@@ -14,16 +14,8 @@ With the Button Logger App, you can efficiently monitor and manage button presse
 
 this is the folder structure:
 
-├── Dockerfile
-└── app
-    ├── app.py
-    ├── log
-    │   ├── app-log.txt
-    │   └── deleted-entries-log.txt
-    ├── static
-    │   └── bla-bg.jpg
-    └── templates
-        └── index.html
+![image](https://github.com/EliBukin/button-logger-app/assets/37555854/b7cd3355-9d67-432c-8fcd-0f838e0ddcc4)
+
 
 
 
