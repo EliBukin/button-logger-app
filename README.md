@@ -1,4 +1,4 @@
-Button Logger App
+Button Logger App - app version 0.3.0
 
 The Button Logger App is a Flask web application with a straightforward purpose:
 
