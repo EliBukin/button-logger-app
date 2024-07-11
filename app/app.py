@@ -49,7 +49,7 @@ def load_config():
         'recipient_email': os.getenv('RECIPIENT_EMAIL'),
         'email_password': os.getenv('EMAIL_PASSWORD'),
         'time_slots': ['14:00', '02:00'],
-        'reminder_intervals': [2, 4, 6]
+        'reminder_intervals': [60, 90, 180]
     }
 
 def save_config(config):
