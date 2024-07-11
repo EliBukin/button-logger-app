@@ -1,4 +1,4 @@
-Button Logger App - app version 1.0.0
+Button Logger App - app version 1.0.1
 
 
 

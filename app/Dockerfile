@@ -1,21 +1,22 @@
-FROM python:3.9-slim
-
-RUN apt-get update && apt-get install -y tzdata
+FROM python:3.9-alpine
 
 ENV TZ=Asia/Jerusalem
 
 WORKDIR /app
 
-COPY . /app
+COPY requirements.txt .
 
-RUN pip install --no-cache-dir flask python-dotenv
+RUN apk add --no-cache tzdata && \
+    pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
-
-ENV FLASK_APP=app:create_app()
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_ENV=production
+COPY . .
 
 RUN chmod 755 /app
+
+ENV FLASK_APP=app:create_app() \
+    FLASK_RUN_HOST=0.0.0.0 \
+    FLASK_ENV=production
+
+EXPOSE 5000
 
 CMD ["flask", "run"]
