@@ -1,72 +1,273 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Log Viewer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meds Consumption Logger</title>
     <style>
-        /* Add custom CSS for the "Add" button */
-        .add-button {
-            font-size: 20em;
-            padding: 10px;
-            background-color: #8cfa1e;
-            border-radius: 25px;
-            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
-        }
-
-        /* Increase the font size of the entry captions */
-        ul {
-            list-style-type: none;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
             padding: 0;
+            background-image: url('/static/bla-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #333;
+            min-height: 100vh;
         }
-        ul li {
-            font-size: 3em;
-            color: #0ce2fa; 
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
         }
-        .delete-entry {
-            font-size: 0.5em;
-            margin-left: 20px;
-            padding: 5px 10px;
-            background-color: #fa830c;
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            background-color: #3498db;
             color: white;
             border: none;
             border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        input, select {
+            margin-bottom: 10px;
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            margin-bottom: 5px;
+        }
+        .config-section {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: rgba(249, 249, 249, 0.9);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
             cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
         }
-        h1 {
-            color: white;
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
         }
-
-        html {
-            background-image: url('static/bla-bg.jpg');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .button-container {
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
+            gap: 20px;
+            flex-wrap: wrap;
         }
-        body {
-            text-align: center;
+        .log-entries {
+            margin-top: 20px;
+        }
+        .log-entries ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .log-entries li {
+            background-color: rgba(236, 240, 241, 0.8);
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 10px;
+            }
+            input, select {
+                max-width: 100%;
+            }
+            .button-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Meds Consumption Logger</h1>
-    <form method="post">
-        <button class="add-button" type="submit">Take Meds</button>
-    </form>
-    <ul>
-        {% for entry in log_data %}
-            <li>
-                {{ entry }}
-                <form method="post" action="{{ url_for('delete_entry', index=loop.index0) }}" style="display: inline;">
-                    <button type="submit" class="delete-entry">Delete entry</button>
-                </form>
-            </li>
-        {% endfor %}
-    </ul>
+    <div class="container">
+        <h1>Meds Consumption Logger</h1>
+        <div class="button-container">
+            <button onclick="pushButton()">Take Meds</button>
+            <label class="switch">
+                <input type="checkbox" id="emailConfirmationSwitch" checked>
+                <span class="slider"></span>
+            </label>
+            <span>Send Email Confirmation</span>
+        </div>
+
+        <div class="log-entries">
+            <h3>Last 5 Logged Entries:</h3>
+            <ul>
+                {% for entry in last_entries %}
+                    <li>{{ entry }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <h2>Configuration</h2>
+        <div class="config-section">
+            <h3>Email Configuration</h3>
+            <form id="emailConfigForm">
+                <label for="senderEmail">Sender Email:</label>
+                <input type="email" id="senderEmail" value="{{ config['sender_email'] }}"><br>
+
+                <label for="recipientEmail">Recipient Email:</label>
+                <input type="email" id="recipientEmail" value="{{ config['recipient_email'] }}"><br>
+
+                <label for="emailPassword">Email Password:</label>
+                <input type="password" id="emailPassword" value="{{ config['email_password'] }}"><br>
+
+                <button type="button" onclick="updateEmailConfig()">Update Email Configuration</button>
+            </form>
+        </div>
+
+        <div class="config-section">
+            <h3>Time Configuration</h3>
+            <form id="timeConfigForm">
+                <label for="timeSlot1">Meds Time 1:</label>
+                <input type="time" id="timeSlot1" value="{{ config['time_slots'][0] }}"><br>
+
+                <label for="timeSlot2">Meds Time 2:</label>
+                <input type="time" id="timeSlot2" value="{{ config['time_slots'][1] }}"><br>
+
+                <label for="reminderInterval1">Send first email reminder after:</label>
+                <input type="number" id="reminderInterval1" value="{{ config['reminder_intervals'][0] }}"> minutes<br>
+
+                <label for="reminderInterval2">Send second email reminder after:</label>
+                <input type="number" id="reminderInterval2" value="{{ config['reminder_intervals'][1] }}"> minutes<br>
+
+                <label for="reminderInterval3">Send third (angry) message after:</label>
+                <input type="number" id="reminderInterval3" value="{{ config['reminder_intervals'][2] }}"> minutes<br>
+
+                <button type="button" onclick="updateTimeConfig()">Update Time Configuration</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function pushButton() {
+            const sendEmail = document.getElementById('emailConfirmationSwitch').checked;
+            fetch('/push_button', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ send_email: sendEmail }),
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    alert(result.message);
+                    location.reload(); // Reload the page to update the log entries
+                } else {
+                    alert('Failed to push button');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while pushing the button');
+            });
+        }
+
+        function updateEmailConfig() {
+            const config = {
+                sender_email: document.getElementById('senderEmail').value,
+                recipient_email: document.getElementById('recipientEmail').value,
+                email_password: document.getElementById('emailPassword').value
+            };
+
+            updateConfig(config, 'Email');
+        }
+
+        function updateTimeConfig() {
+            const config = {
+                time_slots: [
+                    document.getElementById('timeSlot1').value,
+                    document.getElementById('timeSlot2').value
+                ],
+                reminder_intervals: [
+                    parseInt(document.getElementById('reminderInterval1').value),
+                    parseInt(document.getElementById('reminderInterval2').value),
+                    parseInt(document.getElementById('reminderInterval3').value)
+                ]
+            };
+
+            updateConfig(config, 'Time');
+        }
+
+        function updateConfig(config, configType) {
+            fetch('/update_config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`${configType} configuration updated successfully`);
+                } else {
+                    alert(`Failed to update ${configType.toLowerCase()} configuration`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(`An error occurred while updating the ${configType.toLowerCase()} configuration`);
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,70 +1,169 @@
-from flask import Flask, render_template, request, redirect
-import time
+from flask import Flask, render_template, request, jsonify
+from datetime import datetime, time
+import threading
+import smtplib
+from email.mime.text import MIMEText
 import os
+import json
+from dotenv import load_dotenv
+from logging.config import dictConfig
+import logging
 
-app = Flask(__name__)
+def get_last_log_entries(n=5):
+    ensure_log_file_exists()
+    with open(LOG_FILE, 'r') as f:
+        lines = f.readlines()
+    return [line.strip() for line in lines[:n]]
 
-log_file_path = '/app/log/app-log.txt'
-deleted_log_file_path = '/app/log/deleted-entries-log.txt'
+# Configure logging
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        log_action()
-        return redirect('/')
+# Load environment variables
+load_dotenv()
 
-    log_data = read_log()
-    if len(log_data) > 6:
-        log_data = log_data[:6]
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
-    return render_template('index.html', log_data=log_data)
+CONFIG_FILE = 'config.json'
+LOG_FILE = 'button_log.txt'
 
-@app.route('/delete/<int:index>', methods=['POST'])
-def delete_entry(index):
-    log_data = read_log()
-    if 0 <= index < len(log_data):
-        deleted_entry = log_data[index]
-        del log_data[index]
-        write_log(log_data)
-        log_deleted_entry(deleted_entry)
-    return redirect('/')
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as f:
+            return json.load(f)
+    return {
+        'sender_email': os.getenv('SENDER_EMAIL'),
+        'recipient_email': os.getenv('RECIPIENT_EMAIL'),
+        'email_password': os.getenv('EMAIL_PASSWORD'),
+        'time_slots': ['14:00', '02:00'],
+        'reminder_intervals': [60, 90, 180]
+    }
 
-def log_action():
-    current_time = time.strftime('%d-%m-%Y %H:%M:%S')
-    log_data = read_log()
-    log_data.insert(0, current_time)
-    write_log(log_data)
+def save_config(config):
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(config, f)
 
-def read_log():
-    if os.path.exists(log_file_path):
-        with open(log_file_path, 'r') as log_file:
-            log_data = log_file.read().splitlines()
-        return log_data
-    else:
-        return []
+config = load_config()
 
-def write_log(log_data):
-    with open(log_file_path, 'w') as log_file:
-        for entry in log_data:
-            log_file.write(entry + '\n')
+def ensure_log_file_exists():
+    if not os.path.exists(LOG_FILE):
+        with open(LOG_FILE, 'w') as f:
+            f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S\n'))
 
-def log_deleted_entry(entry):
-    existing_entries = []
-    if os.path.exists(deleted_log_file_path):
-        try:
-            with open(deleted_log_file_path, 'r') as deleted_log_file:
-                existing_entries = deleted_log_file.read().splitlines()
-        except IOError:
-            print(f"Warning: Could not read from {deleted_log_file_path}")
+def send_email(subject, body):
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = config['sender_email']
+    msg['To'] = config['recipient_email']
 
-    existing_entries.insert(0, entry)
-    
     try:
-        with open(deleted_log_file_path, 'w') as deleted_log_file:
-            for entry in existing_entries:
-                deleted_log_file.write(entry + '\n')
-    except IOError:
-        print(f"Error: Could not write to {deleted_log_file_path}")
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(config['sender_email'], config['email_password'])
+            server.sendmail(config['sender_email'], config['recipient_email'], msg.as_string())
+        app.logger.info(f"Email sent: {subject}")
+    except Exception as e:
+        app.logger.error(f"Failed to send email: {str(e)}")
+
+def log_button_push(send_email=True):
+    ensure_log_file_exists()
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open(LOG_FILE, 'r+') as f:
+        content = f.read()
+        f.seek(0, 0)
+        f.write(timestamp + '\n' + content)
+    if send_email:
+        send_email('Button Pushed', f'Button was pushed at {timestamp}')
+    app.logger.info(f"Button pushed at {timestamp}. Email sent: {send_email}")
+
+def check_button_push():
+    while True:
+        now = datetime.now().time()
+        for slot in [datetime.strptime(ts, "%H:%M").time() for ts in config['time_slots']]:
+            if now.hour == slot.hour and now.minute == slot.minute:
+                for interval in config['reminder_intervals']:
+                    threading.Timer(interval * 60, send_reminder, args=[interval]).start()
+        threading.Event().wait(60)  # Check every minute
+
+def send_reminder(interval):
+    ensure_log_file_exists()
+    with open(LOG_FILE, 'r') as f:
+        last_push = datetime.strptime(f.readline().strip(), '%Y-%m-%d %H:%M:%S')
+    
+    if (datetime.now() - last_push).total_seconds() > interval * 60:
+        if interval == config['reminder_intervals'][0]:
+            send_email('First Reminder', 'This is the first reminder, do the thing.')
+        elif interval == config['reminder_intervals'][1]:
+            send_email('Second Reminder', 'This is the second reminder, get on with it now!')
+        elif interval == config['reminder_intervals'][2]:
+            send_email('Missed Button Push', 'You skipped one, NOT GOOD!')
+
+@app.route('/')
+def home():
+    last_entries = get_last_log_entries()
+    return render_template('index.html', config=config, last_entries=last_entries)
+
+@app.route('/push_button', methods=['POST'])
+def push_button():
+    data = request.json
+    send_email = data.get('send_email', True)
+    log_button_push(send_email)
+    return jsonify({'status': 'success', 'message': f'Button pushed successfully. Email sent: {send_email}'})
+
+@app.route('/update_config', methods=['POST'])
+def update_config():
+    global config
+    new_config = request.json
+    
+    # Validate the incoming configuration
+    if not validate_config(new_config):
+        return jsonify({'status': 'error', 'message': 'Invalid configuration data'}), 400
+
+    # Update only the provided configuration fields
+    config.update(new_config)
+    save_config(config)
+    app.logger.info(f"Configuration updated: {new_config.keys()}")
+    return jsonify({'status': 'success'})
+
+def validate_config(new_config):
+    # Validate email configuration
+    if 'sender_email' in new_config:
+        if not all(key in new_config for key in ['sender_email', 'recipient_email', 'email_password']):
+            return False
+        if not all(isinstance(new_config[key], str) for key in ['sender_email', 'recipient_email', 'email_password']):
+            return False
+
+    # Validate time configuration
+    if 'time_slots' in new_config:
+        if not all(key in new_config for key in ['time_slots', 'reminder_intervals']):
+            return False
+        if not isinstance(new_config['time_slots'], list) or len(new_config['time_slots']) != 2:
+            return False
+        if not isinstance(new_config['reminder_intervals'], list) or len(new_config['reminder_intervals']) != 3:
+            return False
+        if not all(isinstance(slot, str) for slot in new_config['time_slots']):
+            return False
+        if not all(isinstance(interval, int) for interval in new_config['reminder_intervals']):
+            return False
+
+    return True
+
+def create_app():
+    ensure_log_file_exists()
+    threading.Thread(target=check_button_push, daemon=True).start()
+    return app
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    create_app().run(debug=False)
