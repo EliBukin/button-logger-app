@@ -37,8 +37,8 @@ load_dotenv()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-CONFIG_FILE = 'config.json'
-LOG_FILE = 'button_log.txt'
+CONFIG_FILE = '/app/app-data/config.json'
+LOG_FILE = '/app/app-data/button_log.txt'
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
