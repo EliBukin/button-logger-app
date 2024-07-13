@@ -101,14 +101,9 @@
         input:checked + .slider:before {
             transform: translateX(26px);
         }
-        .button-container {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
         .log-entries {
             margin-top: 20px;
+            margin-bottom: 20px;
         }
         .log-entries ul {
             list-style-type: none;
@@ -120,6 +115,63 @@
             padding: 10px;
             border-radius: 3px;
         }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 5px 5px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .top-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .take-meds-button {
+            padding: 24px 48px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+        .take-meds-button:hover {
+            background-color: #2980b9;
+        }
+        .switches-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .switch-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .switch-wrapper span {
+            margin-left: 10px;
+        }
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -128,9 +180,16 @@
             input, select {
                 max-width: 100%;
             }
-            .button-container {
+            .top-container {
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: stretch;
+            }
+            .take-meds-button {
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            .switches-container {
+                align-items: stretch;
             }
         }
     </style>
@@ -138,13 +197,24 @@
 <body>
     <div class="container">
         <h1>Meds Consumption Logger</h1>
-        <div class="button-container">
-            <button onclick="pushButton()">Take Meds</button>
-            <label class="switch">
-                <input type="checkbox" id="emailConfirmationSwitch" checked>
-                <span class="slider"></span>
-            </label>
-            <span>Send Email Confirmation</span>
+        <div class="top-container">
+            <button class="take-meds-button" onclick="pushButton()">Take Meds</button>
+            <div class="switches-container">
+                <div class="switch-wrapper">
+                    <label class="switch">
+                        <input type="checkbox" id="emailConfirmationSwitch" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span>Send Email Confirmation</span>
+                </div>
+                <div class="switch-wrapper">
+                    <label class="switch">
+                        <input type="checkbox" id="emailFunctionalitySwitch" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span>Enable Email Reminders</span>
+                </div>
+            </div>
         </div>
 
         <div class="log-entries">
@@ -156,43 +226,51 @@
             </ul>
         </div>
 
-        <h2>Configuration</h2>
-        <div class="config-section">
-            <h3>Email Configuration</h3>
-            <form id="emailConfigForm">
-                <label for="senderEmail">Sender Email:</label>
-                <input type="email" id="senderEmail" value="{{ config['sender_email'] }}"><br>
-
-                <label for="recipientEmail">Recipient Email:</label>
-                <input type="email" id="recipientEmail" value="{{ config['recipient_email'] }}"><br>
-
-                <label for="emailPassword">Email Password:</label>
-                <input type="password" id="emailPassword" value="{{ config['email_password'] }}"><br>
-
-                <button type="button" onclick="updateEmailConfig()">Update Email Configuration</button>
-            </form>
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'timeConfig')">Time Configuration</div>
+            <div class="tab" onclick="openTab(event, 'emailConfig')">Email Configuration</div>
         </div>
 
-        <div class="config-section">
-            <h3>Time Configuration</h3>
-            <form id="timeConfigForm">
-                <label for="timeSlot1">Meds Time 1:</label>
-                <input type="time" id="timeSlot1" value="{{ config['time_slots'][0] }}"><br>
+        <div id="timeConfig" class="tab-content active">
+            <h2>Time Configuration</h2>
+            <div class="config-section">
+                <form id="timeConfigForm">
+                    <label for="timeSlot1">Meds Time 1:</label>
+                    <input type="time" id="timeSlot1" value="{{ config['time_slots'][0] }}"><br>
 
-                <label for="timeSlot2">Meds Time 2:</label>
-                <input type="time" id="timeSlot2" value="{{ config['time_slots'][1] }}"><br>
+                    <label for="timeSlot2">Meds Time 2:</label>
+                    <input type="time" id="timeSlot2" value="{{ config['time_slots'][1] }}"><br>
 
-                <label for="reminderInterval1">Send first email reminder after:</label>
-                <input type="number" id="reminderInterval1" value="{{ config['reminder_intervals'][0] }}"> minutes<br>
+                    <label for="reminderInterval1">Send first email reminder after:</label>
+                    <input type="number" id="reminderInterval1" value="{{ config['reminder_intervals'][0] }}"> minutes<br>
 
-                <label for="reminderInterval2">Send second email reminder after:</label>
-                <input type="number" id="reminderInterval2" value="{{ config['reminder_intervals'][1] }}"> minutes<br>
+                    <label for="reminderInterval2">Send second email reminder after:</label>
+                    <input type="number" id="reminderInterval2" value="{{ config['reminder_intervals'][1] }}"> minutes<br>
 
-                <label for="reminderInterval3">Send third (angry) message after:</label>
-                <input type="number" id="reminderInterval3" value="{{ config['reminder_intervals'][2] }}"> minutes<br>
+                    <label for="reminderInterval3">Send third (angry) message after:</label>
+                    <input type="number" id="reminderInterval3" value="{{ config['reminder_intervals'][2] }}"> minutes<br>
 
-                <button type="button" onclick="updateTimeConfig()">Update Time Configuration</button>
-            </form>
+                    <button type="button" onclick="updateTimeConfig()">Update Time Configuration</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="emailConfig" class="tab-content">
+            <h2>Email Configuration</h2>
+            <div class="config-section">
+                <form id="emailConfigForm">
+                    <label for="senderEmail">Sender Email:</label>
+                    <input type="email" id="senderEmail" value="{{ config['sender_email'] }}"><br>
+
+                    <label for="recipientEmail">Recipient Email:</label>
+                    <input type="email" id="recipientEmail" value="{{ config['recipient_email'] }}"><br>
+
+                    <label for="emailPassword">Email Password:</label>
+                    <input type="password" id="emailPassword" value="{{ config['email_password'] }}"><br>
+
+                    <button type="button" onclick="updateEmailConfig()">Update Email Configuration</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -225,7 +303,8 @@
             const config = {
                 sender_email: document.getElementById('senderEmail').value,
                 recipient_email: document.getElementById('recipientEmail').value,
-                email_password: document.getElementById('emailPassword').value
+                email_password: document.getElementById('emailPassword').value,
+                email_enabled: document.getElementById('emailFunctionalitySwitch').checked
             };
 
             updateConfig(config, 'Email');
@@ -268,6 +347,25 @@
                 alert(`An error occurred while updating the ${configType.toLowerCase()} configuration`);
             });
         }
+
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // Add event listener to update config when the email functionality switch changes
+        document.getElementById('emailFunctionalitySwitch').addEventListener('change', function() {
+            updateEmailConfig();
+        });
     </script>
 </body>
 </html>

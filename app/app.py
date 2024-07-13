@@ -49,7 +49,8 @@ def load_config():
         'recipient_email': os.getenv('RECIPIENT_EMAIL'),
         'email_password': os.getenv('EMAIL_PASSWORD'),
         'time_slots': ['14:00', '02:00'],
-        'reminder_intervals': [60, 90, 180]
+        'reminder_intervals': [60, 90, 180],
+        'email_enabled': True  # Add this line to set a default value
     }
 
 def save_config(config):
@@ -64,6 +65,10 @@ def ensure_log_file_exists():
             f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S\n'))
 
 def send_email(subject, body):
+    if not config['email_enabled']:
+        app.logger.info(f"Email not sent (disabled): {subject}")
+        return
+
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = config['sender_email']
@@ -143,6 +148,11 @@ def validate_config(new_config):
         if not all(key in new_config for key in ['sender_email', 'recipient_email', 'email_password']):
             return False
         if not all(isinstance(new_config[key], str) for key in ['sender_email', 'recipient_email', 'email_password']):
+            return False
+    
+    # Validate email_enabled
+    if 'email_enabled' in new_config:
+        if not isinstance(new_config['email_enabled'], bool):
             return False
 
     # Validate time configuration
