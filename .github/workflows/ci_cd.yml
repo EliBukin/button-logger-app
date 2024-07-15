@@ -1,0 +1,66 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - cicd-github-workflows-adding-unittests
+  pull_request:
+    branches:
+      - cicd-github-workflows-adding-unittests
+
+      
+jobs:
+  build-and-test:
+    runs-on: arc-runner-set
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Increment version
+        id: increment_version
+        run: |
+          new_version=$(./increment_version.sh)
+          echo "new_version=$new_version" >> $GITHUB_ENV
+
+      - name: Commit version change
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m "Bump version to ${{ env.new_version }}"
+          git push
+
+      - name: Build Docker image
+        id: build_image
+        run: |
+          docker build -t button-logger-app:${{ env.new_version }} -f app/Dockerfile .
+
+      - name: Run tests inside Docker container
+        run: |
+          docker run --rm button-logger-app:${{ env.new_version }} pytest app/tests
+
+  push-to-dockerhub:
+    runs-on: arc-runner-set
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push Docker image
+        run: |
+          docker tag button-logger-app:${{ env.new_version }} ${{ secrets.DOCKER_USERNAME }}/button-logger-app:${{ env.new_version }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/button-logger-app:${{ env.new_version }}
