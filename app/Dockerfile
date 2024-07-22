@@ -11,6 +11,8 @@ RUN apk add --no-cache tzdata && \
 
 COPY . .
 
+ENV PYTHONPATH=/app
+
 RUN chmod 755 /app
 
 ENV FLASK_APP=app:create_app() \
