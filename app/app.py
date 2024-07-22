@@ -64,7 +64,7 @@ def ensure_log_file_exists():
         with open(LOG_FILE, 'w') as f:
             f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S\n'))
 
-def send_email(subject, body):
+def send_email_notification(subject, body):
     if not config['email_enabled']:
         app.logger.info(f"Email not sent (disabled): {subject}")
         return
@@ -90,7 +90,7 @@ def log_button_push(send_email=True):
         f.seek(0, 0)
         f.write(timestamp + '\n' + content)
     if send_email:
-        send_email('Button Pushed', f'Button was pushed at {timestamp}')
+        send_email_notification('Button Pushed', f'Button was pushed at {timestamp}')
     app.logger.info(f"Button pushed at {timestamp}. Email sent: {send_email}")
 
 def check_button_push():
