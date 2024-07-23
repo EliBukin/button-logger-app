@@ -202,14 +202,14 @@
             <div class="switches-container">
                 <div class="switch-wrapper">
                     <label class="switch">
-                        <input type="checkbox" id="emailConfirmationSwitch" checked>
+                        <input type="checkbox" id="emailConfirmationSwitch" {% if config['send_confirmation'] %}checked{% endif %}>
                         <span class="slider"></span>
                     </label>
                     <span>Send Email Confirmation</span>
                 </div>
                 <div class="switch-wrapper">
                     <label class="switch">
-                        <input type="checkbox" id="emailFunctionalitySwitch" checked>
+                        <input type="checkbox" id="emailFunctionalitySwitch" {% if config['email_enabled'] %}checked{% endif %}>
                         <span class="slider"></span>
                     </label>
                     <span>Enable Email Reminders</span>
@@ -304,7 +304,8 @@
                 sender_email: document.getElementById('senderEmail').value,
                 recipient_email: document.getElementById('recipientEmail').value,
                 email_password: document.getElementById('emailPassword').value,
-                email_enabled: document.getElementById('emailFunctionalitySwitch').checked
+                email_enabled: document.getElementById('emailFunctionalitySwitch').checked,
+                send_confirmation: document.getElementById('emailConfirmationSwitch').checked
             };
 
             updateConfig(config, 'Email');
@@ -362,10 +363,9 @@
             evt.currentTarget.className += " active";
         }
 
-        // Add event listener to update config when the email functionality switch changes
-        document.getElementById('emailFunctionalitySwitch').addEventListener('change', function() {
-            updateEmailConfig();
-        });
+        // Add event listeners to update config when the switches change
+        document.getElementById('emailFunctionalitySwitch').addEventListener('change', updateEmailConfig);
+        document.getElementById('emailConfirmationSwitch').addEventListener('change', updateEmailConfig);
     </script>
 </body>
 </html>

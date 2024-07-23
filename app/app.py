@@ -50,7 +50,8 @@ def load_config():
         'email_password': os.getenv('EMAIL_PASSWORD'),
         'time_slots': ['14:00', '02:00'],
         'reminder_intervals': [60, 90, 180],
-        'email_enabled': True  # Add this line to set a default value
+        'email_enabled': True,
+        'send_confirmation': True  # Add this line
     }
 
 def save_config(config):
@@ -89,9 +90,9 @@ def log_button_push(send_email=True):
         content = f.read()
         f.seek(0, 0)
         f.write(timestamp + '\n' + content)
-    if send_email:
+    if send_email and config['send_confirmation']:
         send_email_notification('Button Pushed', f'Button was pushed at {timestamp}')
-    app.logger.info(f"Button pushed at {timestamp}. Email sent: {send_email}")
+    app.logger.info(f"Button pushed at {timestamp}. Email sent: {send_email and config['send_confirmation']}")
 
 def check_button_push():
     while True:
@@ -150,9 +151,9 @@ def validate_config(new_config):
         if not all(isinstance(new_config[key], str) for key in ['sender_email', 'recipient_email', 'email_password']):
             return False
     
-    # Validate email_enabled
-    if 'email_enabled' in new_config:
-        if not isinstance(new_config['email_enabled'], bool):
+    # Validate boolean fields
+    for field in ['email_enabled', 'send_confirmation']:
+        if field in new_config and not isinstance(new_config[field], bool):
             return False
 
     # Validate time configuration
@@ -177,3 +178,4 @@ def create_app():
 
 if __name__ == '__main__':
     create_app().run(debug=False)
+

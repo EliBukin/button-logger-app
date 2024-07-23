@@ -1,4 +1,4 @@
-### Button Logger App - version 1.1.0 ###
+### Button Logger App - version 1.1.1 ###
 
 
 This application is a button logger system with email reminders. Here's a high-level description of its purpose and operation:
