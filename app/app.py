@@ -110,11 +110,11 @@ def send_reminder(interval):
     
     if (datetime.now() - last_push).total_seconds() > interval * 60:
         if interval == config['reminder_intervals'][0]:
-            send_email('First Reminder', 'This is the first reminder, do the thing.')
+            send_email_notification('First Reminder', 'This is the first reminder, do the thing.')
         elif interval == config['reminder_intervals'][1]:
-            send_email('Second Reminder', 'This is the second reminder, get on with it now!')
+            send_email_notification('Second Reminder', 'This is the second reminder, get on with it now!')
         elif interval == config['reminder_intervals'][2]:
-            send_email('Missed Button Push', 'You skipped one, NOT GOOD!')
+            send_email_notification('Missed Button Push', 'You skipped one, NOT GOOD!')
 
 @app.route('/')
 def home():
@@ -177,5 +177,5 @@ def create_app():
     return app
 
 if __name__ == '__main__':
-    create_app().run(debug=False)
-
+    app = create_app()
+    app.run(debug=False)
